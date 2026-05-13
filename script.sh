@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Made by Paco with love <3
+# Mario Aja Moral
 #
 
 
@@ -154,7 +154,7 @@ SG_ID_WORDPRESS=$(aws ec2 create-security-group \
   --group-name "GR-Apache" \
   --description "$DESCRIPTION" \
   --vpc-id $VPC_ID \
-  --tag-specifications "ResourceType=security-group,Tags=[{Key=Name,Value="Servidor-ticketing"}]" \
+  --tag-specifications "ResourceType=security-group,Tags=[{Key=Name,Value="Servidor-apache"}]" \
   --query 'GroupId' \
   --output text)
 # Add inbound rule to allow SSH
@@ -365,7 +365,7 @@ done
 echo "SSH disponible en NGINX!"
 
 # Permisos clave local
-chmod 400 "${KEY_NAME}.pem"
+chmod 700 "${KEY_NAME}.pem"
 
 # Crear directorio .ssh en nginx
 ssh -o StrictHostKeyChecking=no \
@@ -377,13 +377,13 @@ ssh -o StrictHostKeyChecking=no \
 scp -o StrictHostKeyChecking=no \
     -i "${KEY_NAME}.pem" \
     "${KEY_NAME}.pem" \
-    ubuntu@"${NGINX_PUBLIC_IP}":~/.ssh/
+    ubuntu@"${NGINX_PUBLIC_IP}":~/
 
 # Permisos dentro nginx
 ssh -o StrictHostKeyChecking=no \
     -i "${KEY_NAME}.pem" \
     ubuntu@"${NGINX_PUBLIC_IP}" \
-    "chmod 400 ~/.ssh/${KEY_NAME}.pem"
+    "chmod 400 ~/${KEY_NAME}.pem"
 
 # Añadir hosts privados automáticamente
 ssh -o StrictHostKeyChecking=no \
@@ -514,5 +514,45 @@ echo "${INSTANCE_NAME} created";
 
 
 
+echo "                                                                                            ";
+echo "▄▄▄▄▄   ▄▄▄                    ▄▄▄▄▄▄▄                        ▄▄▄▄       ██  ██  ██  ▄▄▄▄   ";
+echo " ███    ███                    ███▀▀███▄                    ▄██████▄    ██  ██  ██ ▄██████▄ ";
+echo " ███    ███      ▄███▄ ██ ██   ███▄▄███▀ ▀▀█▄ ▄████ ▄███▄   ███  ███   ██  ██  ██  ███  ███ ";
+echo " ███    ███      ██ ██ ██▄██   ███▀▀▀▀  ▄█▀██ ██    ██ ██   ███▄▄███  ██  ██  ██   ███▄▄███ ";
+echo "▄███▄   ████████ ▀███▀  ▀█▀    ███      ▀█▄██ ▀████ ▀███▀    ▀████▀  ██  ██  ██     ▀████▀  ";
+echo "                                                                                            ";
+echo "                                                                                            ";
+echo "======================================================"
+echo "DEPLOY COMPLETADO"
+echo "======================================================"
+echo ""
+echo "PROXY NGINX:"
+echo "ssh -i ${KEY_NAME}.pem ubuntu@${NGINX_PUBLIC_IP}"
+echo ""
+echo "DOMINIOS:"
+echo "https://${subdomain_aws}.alisal09.com.es"
+echo "https://${subdomain_aws2}.alisal09.com.es"
+echo ""
+echo "IPs:"
+echo "NGINX   : ${ip_nginx}"
+echo "APACHE1 : ${IP_APACHE1}"
+echo "APACHE2 : ${IP_APACHE2}"
+echo ""
+echo "IP pública NGINX:"
+echo "${NGINX_PUBLIC_IP}"
+echo ""
+echo ""
+echo "-- Made  with love by Paco <3 --"
+echo ""
+echo "======================================================"
 
 
+echo ""
+echo "======================================================"
+echo "Descarga la clave ssh al equipo <3"
+echo "======================================================"
+echo ""
+echo "Actions -> Downlod file"
+echo "${KEY_NAME}.pem"
+echo "Si no tendras que usar la cloudshell :c"
+echo "======================================================"
