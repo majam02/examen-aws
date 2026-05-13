@@ -1,4 +1,4 @@
 # examen-aws
 ```bash
-wget https://github.com/majam02/examen-aws/blob/main/script.sh && chmod +x script.sh && ./script.sh
+wget https://raw.githubusercontent.com/majam02/examen-aws/refs/heads/main/script.sh && chmod +x script.sh && ./script.sh
 ```
