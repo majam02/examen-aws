@@ -1,9 +1,7 @@
 #!/bin/bash
 #
-# Mario Aja Moral
+# Made by paco with love <3
 #
-
-
 
 # Key pair SSH
 KEY_NAME="examen-aws"
@@ -35,8 +33,6 @@ read IP_APACHE1
 
 printf "%s" "IP máquina apache2 (ej: 10.0.2.200, sin /): "
 read IP_APACHE2
-
-
 
 
 echo "-- Preguntas para domios --"
@@ -555,4 +551,17 @@ echo ""
 echo "Actions -> Downlod file"
 echo "${KEY_NAME}.pem"
 echo "Si no tendras que usar la cloudshell :c"
+echo "======================================================"
+echo ""
+
+
+echo ""
+echo "======================================================"
+echo "(CERTIFICADO SSL / DNS)"
+echo "======================================================"
+echo ""
+echo "REGENERAR CERTIFICADOS + REINICIAR NGINX:"
+echo "copia y pega :3"
+echo "ssh -i ${KEY_NAME}.pem ubuntu@${NGINX_PUBLIC_IP} \"sudo systemctl stop nginx && sudo certbot certonly --standalone -d ${subdomain_aws}.alisal09.com.es -d ${subdomain_aws2}.alisal09.com.es --agree-tos --non-interactive --email ${EMAIL} && sudo systemctl start nginx\""
+echo ""
 echo "======================================================"
