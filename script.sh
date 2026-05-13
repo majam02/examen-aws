@@ -41,10 +41,10 @@ echo "-- Preguntas para domios --"
 printf "%s" "Insert email: "
 read EMAIL
 
-printf "%s" "SubDominio aws: "
+printf "%s" "SubDominio aws (sin el .alisal09.com.es): "
 read subdomain_aws
 
-printf "%s" "SubDominio aws2: "
+printf "%s" "SubDominio aws2 (sin el .alisal09.com.es): "
 read subdomain_aws2
 
 
@@ -346,6 +346,9 @@ NGINX_PUBLIC_IP=$(aws ec2 describe-instances \
 
 echo "NGINX Public IP: ${NGINX_PUBLIC_IP}"
 
+# Permisos clave local
+chmod 700 "${KEY_NAME}.pem"
+
 echo "Esperando SSH en NGINX..."
 
 # Esperar SSH disponible
@@ -359,9 +362,6 @@ do
 done
 
 echo "SSH disponible en NGINX!"
-
-# Permisos clave local
-chmod 700 "${KEY_NAME}.pem"
 
 # Crear directorio .ssh en nginx
 ssh -o StrictHostKeyChecking=no \
