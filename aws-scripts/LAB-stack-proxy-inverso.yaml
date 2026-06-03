@@ -1,0 +1,278 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Infraestructura base para proxy inverso
+
+Parameters:
+
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Clave SSH existente
+
+  UbuntuAmi:
+    Type: String
+    Default: ami-04b4f1a9cf54c11d0
+
+Resources:
+
+# ==========================
+# VPC
+# ==========================
+
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: ProxyVPC
+
+# ==========================
+# INTERNET GATEWAY
+# ==========================
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref VPC
+      InternetGatewayId: !Ref InternetGateway
+
+# ==========================
+# SUBRED PUBLICA
+# ==========================
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.1.0/24
+      AvailabilityZone: us-east-1a
+      MapPublicIpOnLaunch: true
+
+# ==========================
+# SUBRED PRIVADA
+# ==========================
+
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: us-east-1a
+
+# ==========================
+# ROUTE TABLE PUBLICA
+# ==========================
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      SubnetId: !Ref PublicSubnet
+
+# ==========================
+# NAT GATEWAY
+# ==========================
+
+  ElasticIP:
+    Type: AWS::EC2::EIP
+    DependsOn: AttachGateway
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    DependsOn: AttachGateway
+    Properties:
+      AllocationId: !GetAtt ElasticIP.AllocationId
+      SubnetId: !Ref PublicSubnet
+
+# ==========================
+# ROUTE TABLE PRIVADA
+# ==========================
+
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    DependsOn: NatGateway
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+
+  PrivateAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateRouteTable
+      SubnetId: !Ref PrivateSubnet
+
+# ==========================
+# SECURITY GROUP NGINX
+# ==========================
+
+  NginxSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Nginx Security Group
+      VpcId: !Ref VPC
+
+      SecurityGroupIngress:
+
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+
+# ==========================
+# SECURITY GROUP APACHE
+# ==========================
+
+  ApacheSG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Apache Security Group
+      VpcId: !Ref VPC
+
+      SecurityGroupIngress:
+
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+
+# ==========================
+# EC2 NGINX
+# ==========================
+
+  NginxInstance:
+    Type: AWS::EC2::Instance
+    DependsOn:
+      - AttachGateway
+      - NatGateway
+
+    Properties:
+      ImageId: !Ref UbuntuAmi
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref NginxSG
+          SubnetId: !Ref PublicSubnet
+
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          apt update -y
+          apt install nginx -y
+          systemctl enable nginx
+          systemctl start nginx
+
+# ==========================
+# APACHE 1
+# ==========================
+
+  Apache1:
+    Type: AWS::EC2::Instance
+    DependsOn:
+      - AttachGateway
+      - NatGateway
+
+    Properties:
+      ImageId: !Ref UbuntuAmi
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+
+      SecurityGroupIds:
+        - !Ref ApacheSG
+
+      SubnetId: !Ref PrivateSubnet
+
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          apt update -y
+          apt install apache2 -y
+          systemctl enable apache2
+          systemctl start apache2
+
+# ==========================
+# APACHE 2
+# ==========================
+
+  Apache2:
+    Type: AWS::EC2::Instance
+    DependsOn:
+      - AttachGateway
+      - NatGateway
+
+    Properties:
+      ImageId: !Ref UbuntuAmi
+      InstanceType: t2.micro
+      KeyName: !Ref KeyName
+
+      SecurityGroupIds:
+        - !Ref ApacheSG
+
+      SubnetId: !Ref PrivateSubnet
+
+      UserData:
+        Fn::Base64: |
+          #!/bin/bash
+          apt update -y
+          apt install apache2 -y
+          systemctl enable apache2
+          systemctl start apache2
+
+
+# ==========================
+# ==========================
+
+
+#aws cloudformation create-stack \
+#  --stack-name proxy-infra \
+#  --template-body file://proxy-stack.yaml \
+#  --parameters ParameterKey=KeyName,ParameterValue=alumno-key
+
+
+#aws cloudformation describe-stacks \
+#  --stack-name proxy-infra
+
+#aws cloudformation delete-stack \
+#  --stack-name proxy-infra
